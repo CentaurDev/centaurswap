@@ -5,6 +5,7 @@ pragma solidity =0.6.12;
 import './libraries/AccessControl.sol';
 import './libraries/SafeMath.sol';
 import './interfaces/ICentaurFactory.sol';
+import './interfaces/IOwnable.sol';
 
 contract CentaurFactoryTimeLock is AccessControl {
 
@@ -18,7 +19,7 @@ contract CentaurFactoryTimeLock is AccessControl {
 
 	bool public PENDING_UNLOCK;
 	uint public UNLOCK_TIMESTAMP;
-	uint public TIMELOCK_PERIOD = 1 days;
+	uint constant public TIMELOCK_PERIOD = 1 days;
 
 	modifier hasTimeLock() {
 		require(PENDING_UNLOCK, "CentaurFactoryTimeLock: UNLOCK_NOT_INITIATED");
@@ -28,11 +29,13 @@ contract CentaurFactoryTimeLock is AccessControl {
 	}
 
 	modifier onlyRole(bytes32 role) {
-        require(hasRole(role, _msgSender()) || hasRole(role, address(0)), "CentaurFactoryTimeLock: NO_PERMISSION");
+        require(hasRole(role, _msgSender()), "CentaurFactoryTimeLock: NO_PERMISSION");
         _;
     }
 
 	constructor(ICentaurFactory _centaurFactory, address _admin, address _normalMaintainer, address _emergencyMaintainer) public {
+		require(address(_centaurFactory) != address(0) && _admin != address(0) && _normalMaintainer != address(0) && _emergencyMaintainer != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
+
 		centaurFactory = _centaurFactory;
 
 		_setRoleAdmin(TIMELOCK_ADMIN_ROLE, TIMELOCK_ADMIN_ROLE);
@@ -54,35 +57,42 @@ contract CentaurFactoryTimeLock is AccessControl {
 	// Factory Owner Functions
 
 	function createPool(address _baseToken, address _oracle, uint _liquidityParameter) external onlyRole(NORMAL_MAINTAINER_ROLE) returns (address pool) {
+    	require(_baseToken != address(0) && _oracle != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
     	return centaurFactory.createPool(_baseToken, _oracle, _liquidityParameter);
     }
 
     function addPool(address _pool) external onlyRole(NORMAL_MAINTAINER_ROLE) {
+    	require(_pool != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
     	centaurFactory.addPool(_pool);
     }
 
     function removePool(address _pool) external onlyRole(NORMAL_MAINTAINER_ROLE) {
+    	require(_pool != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
     	centaurFactory.removePool(_pool);
     }
 
     function transferOwnership(address _owner) external onlyRole(TIMELOCK_ADMIN_ROLE) {
-    	centaurFactory.transferOwnership(_owner);
+    	IOwnable(address(centaurFactory)).transferOwnership(_owner);
     }
 
     // Pool Functions
     function setPoolTradeEnabled(address _pool, bool _tradeEnabled) public onlyRole(NORMAL_MAINTAINER_ROLE) {
+    	require(_pool != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
         centaurFactory.setPoolTradeEnabled(_pool, _tradeEnabled);
     }
 
     function setPoolDepositEnabled(address _pool, bool _depositEnabled) public onlyRole(NORMAL_MAINTAINER_ROLE) {
+    	require(_pool != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
         centaurFactory.setPoolDepositEnabled(_pool, _depositEnabled);
     }
 
     function setPoolWithdrawEnabled(address _pool, bool _withdrawEnabled) public onlyRole(NORMAL_MAINTAINER_ROLE) {
+    	require(_pool != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
         centaurFactory.setPoolWithdrawEnabled(_pool, _withdrawEnabled);
     }
 
     function setPoolLiquidityParameter(address _pool, uint _liquidityParameter) public onlyRole(NORMAL_MAINTAINER_ROLE) {
+    	require(_pool != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
         centaurFactory.setPoolLiquidityParameter(_pool, _liquidityParameter);
     }
 
@@ -99,6 +109,7 @@ contract CentaurFactoryTimeLock is AccessControl {
     }
 
     function emergencyWithdrawFromPool(address _pool, address _token, uint _amount, address _to) external onlyRole(EMERGENCY_MAINTAINER_ROLE) hasTimeLock {
+        require(_pool != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
         centaurFactory.emergencyWithdrawFromPool(_pool, _token, _amount, _to);
     }
 
@@ -108,6 +119,7 @@ contract CentaurFactoryTimeLock is AccessControl {
     }
 
     function setRouterContractWhitelist(address _address, bool _whitelist) external onlyRole(NORMAL_MAINTAINER_ROLE) {
+    	require(_address != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
         centaurFactory.setRouterContractWhitelist(_address, _whitelist);
     }
 
@@ -122,18 +134,22 @@ contract CentaurFactoryTimeLock is AccessControl {
     }
 
     function setPoolLogic(address _poolLogic) external onlyRole(NORMAL_MAINTAINER_ROLE) {
+    	require(_poolLogic != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
         centaurFactory.setPoolLogic(_poolLogic);
     }
 
     function setCloneFactory(address _cloneFactory) external onlyRole(NORMAL_MAINTAINER_ROLE) {
+    	require(_cloneFactory != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
         centaurFactory.setCloneFactory(_cloneFactory);
     }
 
     function setSettlement(address _settlement) external onlyRole(NORMAL_MAINTAINER_ROLE) {
+    	require(_settlement != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
         centaurFactory.setSettlement(_settlement);
     }
 
     function setRouter(address payable _router) external onlyRole(NORMAL_MAINTAINER_ROLE) {
+    	require(_router != address(0), "CentaurFactoryTimeLock: INVALID_ADDRESS");
         centaurFactory.setRouter(_router);
     }
 }
